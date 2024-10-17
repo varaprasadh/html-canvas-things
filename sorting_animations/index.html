@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="script.js" ></script>
+    <script src="algorithms.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            position: relative;
+        }
+
+        .canvas {
+            background: black;
+            border: rgb(20, 194, 188) 1px solid;
+        }
+
+        .select-wrapper {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translate(-50%, 0%);
+            display: flex;
+        }
+
+        .btn {
+            background: rgb(27, 27, 27);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="select-wrapper">
+        <select id="algo">
+            <option value="">Select Algorithm</option>
+            <option value="bubble">Bubble Sort</option>
+            <option value="selection">Selection Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="insertion">Insertion Sort</option>
+            <option value="quick">Quick Sort</option>
+        </select>
+        <div class="btn start">Start</div>
+        <div class="btn randomize">Randomize Numbers</div>
+    </div>
+    <canvas class="canvas"></canvas>
+</body>
+</html>
