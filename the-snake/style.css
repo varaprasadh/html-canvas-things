@@ -1,0 +1,27 @@
+.canvas {
+    background: #000631;
+}
+
+.flex {
+    display: flex;
+    align-items: center;
+}
+.actions {
+    margin-left: 1rem;
+}
+.actions button {
+    padding: 0.5rem 2rem;
+    background: rgb(1, 1, 1);
+    outline: none;
+    border: none;
+    border-radius: 0.2rem;
+    color: white;
+    cursor: pointer;
+}
+.strategy-checker input {
+    margin: 10px;
+    padding: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 10px;
+}

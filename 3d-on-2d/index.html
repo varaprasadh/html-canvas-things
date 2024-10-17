@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="cubeCanvas" width="600" height="600"></canvas>
+    <script>
+      const canvas = document.getElementById('cubeCanvas');
+      const ctx = canvas.getContext('2d');
+      const cubeVertices = [
+        [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], // back face
+        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]     // front face
+      ];
+      const cubeEdges = [
+        [0, 1], [1, 2], [2, 3], [3, 0], // back face
+        [4, 5], [5, 6], [6, 7], [7, 4], // front face
+        [0, 4], [1, 5], [2, 6], [3, 7]  // connecting edges
+      ];
+      const cubeFaces = [
+        [0, 1, 2, 3], // back face
+        [4, 5, 6, 7], // front face
+        [0, 1, 5, 4], // bottom face
+        [2, 3, 7, 6], // top face
+        [0, 3, 7, 4], // left face
+        [1, 2, 6, 5]  // right face
+      ];
+      
+      let rotationX = 0, rotationY = 0;
+    
+      function project([x, y, z]) {
+        const distance = 4;
+        const factor = 200 / (z + distance);
+        return [x * factor + canvas.width / 2, -y * factor + canvas.height / 2];
+      }
+    
+      function rotate([x, y, z], thetaX, thetaY) {
+        const sinX = Math.sin(thetaX), cosX = Math.cos(thetaX);
+        const sinY = Math.sin(thetaY), cosY = Math.cos(thetaY);
+        
+        // Rotation around X-axis
+        let y1 = y * cosX - z * sinX;
+        let z1 = y * sinX + z * cosX;
+    
+        // Rotation around Y-axis
+        let x1 = x * cosY - z1 * sinY;
+        z1 = x * sinY + z1 * cosY;
+    
+        return [x1, y1, z1];
+      }
+    
+      function calculateNormal(face, projectedVertices) {
+        const [v0, v1, v2] = face.map(i => projectedVertices[i]);
+        
+        const vectorA = [v1[0] - v0[0], v1[1] - v0[1]];
+        const vectorB = [v2[0] - v0[0], v2[1] - v0[1]];
+        
+        const cross = vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
+        
+        return cross;
+      }
+    
+      function drawCube() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+        drawFaces();
+        drawEdges();
+      }
+    
+      function drawFaces() {
+        const projectedVertices = cubeVertices.map(v => project(rotate(v, rotationX, rotationY)));
+    
+        cubeFaces.forEach(face => {
+          if (calculateNormal(face, projectedVertices) > 0) {
+            ctx.beginPath();
+            
+            const [x0, y0] = projectedVertices[face[0]];
+            ctx.moveTo(x0, y0);
+            
+            face.slice(1).forEach(index => {
+              const [x, y] = projectedVertices[index];
+              ctx.lineTo(x, y);
+            });
+            
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(100, 100, 250, 0.5)';  // Paint the face
+            ctx.fill();
+            ctx.stroke();
+          }
+        });
+      }
+    
+      function drawEdges() {
+        const projectedVertices = cubeVertices.map(v => project(rotate(v, rotationX, rotationY)));
+    
+        cubeEdges.forEach(([start, end]) => {
+          const [x1, y1] = projectedVertices[start];
+          const [x2, y2] = projectedVertices[end];
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        });
+      }
+    
+      let isDragging = false;
+      let lastMouseX, lastMouseY;
+    
+      canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      });
+    
+      canvas.addEventListener('mouseup', () => isDragging = false);
+    
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+    
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+    
+        rotationY += dx * 0.01;
+        rotationX -= dy * 0.01;
+    
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+    
+        drawCube();
+      });
+    
+      drawCube();
+    </script>
+    
+        
+</body>
+</html>
+
+
