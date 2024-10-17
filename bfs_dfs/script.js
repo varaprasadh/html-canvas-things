@@ -15,6 +15,8 @@ class AnimationController {
         this.instruction = document.querySelector(".instruction");
         this.origin = null;
         this.destination = null;
+        this.obstacles = [];
+        this.obstaclesMode = false;
         this.strategy = "BFS";
     }
 
@@ -28,12 +30,21 @@ class AnimationController {
                 this.instruction.innerText = "click start button";
             }
         });
-
         document.querySelector("#strategy-dfs").addEventListener("change", (e) => {
             if (e.target.checked) {
                 this.strategy = "DFS";
                 this.instruction.innerText = "click start button";
             }
+        });
+        // document.querySelector("#strategy-astar").addEventListener("change", (e) => {
+        //     if (e.target.checked) {
+        //         this.strategy = "A_STAR";
+        //         this.instruction.innerText = "click start button";
+        //     }
+        // });
+
+        document.querySelector("#obstacles").addEventListener("change", (e) => {
+            this.obstaclesMode = e.target.checked;
         });
 
     }
@@ -42,6 +53,14 @@ class AnimationController {
         const rect = this.canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX - rect.left) / this.grid.cellSize);
         const y = Math.floor((e.clientY - rect.top) / this.grid.cellSize);
+
+        if (this.obstaclesMode) {
+            this.obstacles.push({ x, y });
+            console.log(this.obstacles);
+            this.instruction.innerText = "Click the cells on grid to choose destination";
+            this.draw();
+            return;
+        }
         if (this.origin === null) {
             this.origin = { x, y };
             this.instruction.innerText = "Click the cells on grid to choose destination";
@@ -72,7 +91,7 @@ class AnimationController {
             this.instruction.innerText = "Click the cells on grid to choose destination";
             return;
         }
-        const steps = this.strategy === "BFS" ? bfs(this.grid, this.origin, this.destination) : dfs(this.grid, this.origin, this.destination);
+        const steps = this.strategy === "BFS" ? bfs(this.grid, this.origin, this.destination, this.obstacles) :  this.strategy === "DFS" ? dfs(this.grid, this.origin, this.destination, this.obstacles): aStar(this.grid, this.origin, this.destination, this.obstacles);
         console.log(steps);
 
         for (let i = 0; i < steps.length; i++) {
@@ -106,6 +125,11 @@ class AnimationController {
         if (this.destination) {
             this.ctx.fillStyle = "green";
             this.ctx.fillRect(this.destination.x * this.grid.cellSize, this.destination.y * this.grid.cellSize, this.grid.cellSize, this.grid.cellSize);
+        }
+
+        for (let obstacle of this.obstacles) {
+            this.ctx.fillStyle = "orange";
+            this.ctx.fillRect(obstacle.x * this.grid.cellSize, obstacle.y * this.grid.cellSize, this.grid.cellSize, this.grid.cellSize);
         }
         
     }
@@ -159,7 +183,7 @@ class Grid {
 }
 
 
-const bfs = (grid, origin, destination) => {
+const bfs = (grid, origin, destination, obstacles = []) => {
     const queue = [origin];
     const visited = new Set();
     visited.add(origin);
@@ -172,7 +196,7 @@ const bfs = (grid, origin, destination) => {
         const neighbors = grid.getNeighbors(current);
         steps.push(current);
         for (let neighbor of neighbors) {
-            if (!visited.entries().find(entry => entry[0].x === neighbor.x && entry[0].y === neighbor.y)) {
+            if (!visited.entries().find(entry => entry[0].x === neighbor.x && entry[0].y === neighbor.y) && !obstacles.find(obstacle => obstacle.x === neighbor.x && obstacle.y === neighbor.y)) {
                 visited.add(neighbor);
                 queue.push(neighbor);
             }
@@ -181,7 +205,7 @@ const bfs = (grid, origin, destination) => {
     return steps;
 }
 
-const dfs = (grid, origin, destination) => {
+const dfs = (grid, origin, destination, obstacles = []) => {
     const stack = [origin];
     const visited = new Set();
     visited.add(origin);
@@ -195,7 +219,7 @@ const dfs = (grid, origin, destination) => {
         steps.push(current);
         const neighbors = grid.getNeighbors(current);
         for (let neighbor of neighbors) {
-            if (!visited.entries().find(entry => entry[0].x === neighbor.x && entry[0].y === neighbor.y)) {
+            if (!visited.entries().find(entry => entry[0].x === neighbor.x && entry[0].y === neighbor.y) && !obstacles.find(obstacle => obstacle.x === neighbor.x && obstacle.y === neighbor.y)) {
                 visited.add(neighbor);
                 stack.push(neighbor);
             }
@@ -203,3 +227,74 @@ const dfs = (grid, origin, destination) => {
     }
     return steps;
 }
+
+const aStar = (grid, origin, destination, obstacles = []) => {
+    const openSet = [origin];
+    const visited = new Set();
+    const steps = [];
+
+    // Use a Map with stringified keys to track gScore, fScore, and cameFrom
+    const gScore = new Map();
+    const fScore = new Map();
+    const cameFrom = new Map();
+
+    // Set the initial scores for the origin
+    gScore.set(`${origin.x},${origin.y}`, 0);
+    fScore.set(`${origin.x},${origin.y}`, heuristic(origin, destination));
+
+    while (openSet.length > 0) {
+        // Sort the openSet based on the lowest fScore
+        openSet.sort((a, b) => (fScore.get(`${a.x},${a.y}`) || Infinity) - (fScore.get(`${b.x},${b.y}`) || Infinity));
+        const current = openSet.shift();
+
+        // If the destination is reached
+        if (current.x === destination.x && current.y === destination.y) {
+            console.log("a* end", steps);
+            return reconstructPath(cameFrom, current);
+        }
+
+        steps.push(current);
+        visited.add(`${current.x},${current.y}`);
+
+        const neighbors = grid.getNeighbors(current);
+        for (let neighbor of neighbors) {
+            const neighborKey = `${neighbor.x},${neighbor.y}`;
+            if (visited.entries().find(entry => entry.x === neighbor.x && entry.y === neighbor.y) || obstacles.find(obstacle => obstacle.x === neighbor.x && obstacle.y === neighbor.y)) {
+                continue;
+            }
+
+            // Calculate tentative G score
+            const tentativeGScore = (gScore.get(`${current.x},${current.y}`) || Infinity) + 1;
+
+            if (!openSet.find(n => n.x === neighbor.x && n.y === neighbor.y)) {
+                openSet.push(neighbor); // Add neighbor to openSet if not present
+            }
+
+            if (tentativeGScore >= (gScore.get(neighborKey) || Infinity)) {
+                continue; // This path is not better
+            }
+
+            // Update path tracking and scores
+            cameFrom.set(neighborKey, current);
+            gScore.set(neighborKey, tentativeGScore);
+            fScore.set(neighborKey, tentativeGScore + heuristic(neighbor, destination));
+        }
+    }
+
+    return steps; // No path found
+};
+
+// Heuristic function (Manhattan distance)
+const heuristic = (node, destination) => Math.abs(node.x - destination.x) + Math.abs(node.y - destination.y);
+
+// Reconstruct path using stringified keys
+const reconstructPath = (cameFrom, current) => {
+    const path = [current];
+    let key = `${current.x},${current.y}`;
+    while (cameFrom.has(key)) {
+        current = cameFrom.get(key);
+        path.unshift(current);
+        key = `${current.x},${current.y}`;
+    }
+    return path;
+};

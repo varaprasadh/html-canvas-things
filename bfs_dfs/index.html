@@ -10,9 +10,14 @@
 <body>
     <div class="instruction"></div>
     <div class="flex">
+        <div class="obstacles">
+            <input type="checkbox" name="obstacles" id="obstacles"/><label for="obstacles">Obstacles</label>
+        </div>
         <div class="strategy-checker">
             <input type="radio" name="strategy" id="strategy-bfs" value="BFS" checked>Breadth First Search</input>
             <input type="radio" name="strategy" id="strategy-dfs" value="DFS">Depth First Search</input>
+            <!-- <input type="radio" name="strategy" id="strategy-astar" value="A_STAR">A* (A-star)</input> -->
+
         </div>
         <div class="actions">
             <button class="start-btn">Start</button>
